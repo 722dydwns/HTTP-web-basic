@@ -208,3 +208,83 @@ ETag: “v1.0”, ETag : “adkfa21”
 if-Math, if-None-Math : ETag 값 사용 
 
 if-Modified-Since, If-Unmodified-Since : Last-Modified 값 사용
+
+### **⬛ 4. 프록시 캐시**
+
+**◼️ Origin 서버 직접 접근**
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/e2aaace0-24ef-4ae8-bed4-d8cb2e34acd9/20254a40-6ffa-44c2-862a-c5808bcfdada/Untitled.png)
+
+- 예를 들어, 원 서버 (=Origin 서버)가 미국에 있다고 해보자.
+- 원본 리소스를 가지고 있는 origin 서버에 직접 접근하려고 한다면 시간이 매우 오래 걸릴 것이다.
+
+**◼️ 프록시 캐시 도입** 
+
+- Origin 서버에 직접 접근하는 시간을 줄이기 위해 ‘프록시 캐시 서버’를 도입한다.
+- 프록시 캐시 서버는 오리진 서버 대신 클라이언트 요청을 처리한다.
+- 첫번째, 두번쨰, 세번쨰 요청 등 … 모두 빠르게 응답받을 수 있게 된다.
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/e2aaace0-24ef-4ae8-bed4-d8cb2e34acd9/532485a0-877d-4e36-bab3-69a2d079c2ce/Untitled.png)
+
+**◼️ Cache-Control | 캐시 지시어 기타** 
+
+- **Cache-Control : public**
+
+응답이 public 캐시에 저장되어도 된다.
+
+- **Cache-Control : private**
+
+응답이 해당 사용자만을 위한 것임
+
+private 캐시에 저장해야 함 (기본값) 
+
+- **Cache-Control : s-maxage**
+
+프록시 캐시에만 적용되는 max-age
+
+- **Age : 60 (HTTP 헤더)**
+
+오리진 서버에서 응답 후 프록시 캐시 내에 머문 시간 (초)
+
+### **⬛ 5. 캐시 무효화**
+
+**◼️ Cache-Control | 확실한 캐시 무효화 응답** 
+
+만약 확실하게 캐시를 무효화 하려면 아래를 담아서 응답해야 한다.
+
+- **Cache-Control : no-cache,    co-store  ,    must-revalidate**
+- **Pragma: no-cache**
+
+HTTP 1.0 하위 호환
+
+**◼️ Cache-Control : no-cache**
+
+- 데이터는 캐시해도 되지만, 항상 **원 서버에 검증하고 사용**해라(이름에 주의)
+
+**◼️ Cache-Control : no-store**
+
+- 데이터에 민감한 정보가 있으므로 **저장하면 안됨**
+- (메모리에서 사용하고 최대한 빨리 삭제)
+
+**◼️ Cache-Control : must-revalidate**
+
+- **캐시 만료 후 최초 조회 시 원 서버에 검증**해야 함
+- **원 서버 접근 실패 시 반드시 오류가 발생해야 함 504(Gateway Timeout)**
+- **must-revalidate는 캐시 유효 시간이라면 캐시를 사용함**
+
+**◼️ Pragma : no-cache**
+
+- HTTP 1.0 하위 호환
+
+## **no-cache vs. must-revalidate**
+
+**◼️ no-cache**
+
+- no-cache의 경우, **항상 오리진 서버에서 검증해야 하므로 요청이 프록시 캐시 서버에서 오리진 서버로 전달된다.**
+- 오리진 서버는 **캐시를 검증하고 304 Not Modified 응답을 준다.**
+- **이 응답을 받은 클라이언트는 캐시 데이터를 사용**한다.
+- **no-cache의 경우, 프록시 캐시 서버와 오리진 서버의 네트워크가 단절되어 오리진 서버에 요청을 보낼 수 없을 때 캐시 서버 설정에 따라 캐시 데이터 또는 에러를 응답한다.**
+
+**◼️ must-revalidate**
+
+- no-cache와 달리, **must-revalidate의 경우, 프록시 캐시 서버와 오리진 서버의 네트워크가 단절되어 오리진 서버에 요청을 보낼 수 없을 때 항상 504 Gateway Timout 에러를 응답해야 한다.**
